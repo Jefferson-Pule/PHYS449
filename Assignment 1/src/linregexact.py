@@ -5,7 +5,6 @@ import numpy as np
 class Exact_linear_regression(Matrix):
 	#Initializa Class
 	def __init__(self,x,y):
-		print("Hello Wen")
 		#Save our data
 		self.x	=	x		# input from experiment			
 		self.y	=	y		# output from experiment

@@ -18,7 +18,24 @@ from linreggradds import Graddescent_linear_regression
 
 if __name__ == '__main__':
 
-    data=np.loadtxt("data/1.in")
+
+    # Command line arguments
+    parser = argparse.ArgumentParser(description='Inputs')
+
+    parser.add_argument('-input1', help='file path to datafile')
+    parser.add_argument('-json', help='input path to json file')
+
+    args = parser.parse_args()
+    print(args.input1, args.json) #string input
+
+    #read json file and extract 2 value
+    f = open(args.json,)
+ 
+    json_file = json.load(f)
+    print(json_file)
+
+    data=np.loadtxt(args.input1) #input1
+
     dim=data.shape
     #number of data points
     n_d=dim[0]
@@ -27,8 +44,8 @@ if __name__ == '__main__':
     x_d=dim[1]-1
     x=data[:,0:x_d]
     y=data[:,[-1]]
-    lr=0.0001
-    epochs=200000
+    lr=json_file['learning rate']#0.0001 #input 2a
+    epochs=json_file['num iter']#200000 #input 2b
 
     ex=Exact_linear_regression(x,y)
     gd=Graddescent_linear_regression(x,y,x_d, lr, epochs)
