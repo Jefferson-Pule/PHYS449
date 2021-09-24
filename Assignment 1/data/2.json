@@ -1,4 +1,4 @@
 {
-	"learning rate": 0.01,
-	"num iter": 1000
+	"learning rate": 0.001,
+	"num iter": 2000
 }
