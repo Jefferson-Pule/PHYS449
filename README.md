@@ -1,7 +1,7 @@
 # PHYS449 Machine Learning in Physics
 
-- name: *your name*
-- student ID: *your student ID*
+- name: Jefferson Pule
+- student ID: 20804060
 
 ## Instructions
 
