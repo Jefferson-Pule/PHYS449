@@ -4,9 +4,9 @@
 
 - json
 - numpy
--sys
--os
--argparse
+- sys
+- os
+- argparse
 
 ## Running `main.py`
 
