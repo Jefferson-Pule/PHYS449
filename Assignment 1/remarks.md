@@ -2,7 +2,6 @@
 
 
 ## Grading Remarks
-- Implemented batch gradient descent instead of gradient descent (-1)
 
 ## Other Remarks
 - Good code structure use of modules however you may want to keep both linear regression functions in a single module
