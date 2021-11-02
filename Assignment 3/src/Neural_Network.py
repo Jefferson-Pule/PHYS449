@@ -21,6 +21,7 @@ class Net(nn.Module):
         self.fc3= nn.Linear(n_hidden, 2)
         self.df_x= df_x
         self.df_y= df_y
+
         self.f_t= lambda t,x,y, xyini: torch.add(xyini,torch.multiply(t,self.forward(torch.cat((x,y,t), axis=1).float())))
 
     # Feedforward function
@@ -43,15 +44,17 @@ class Net(nn.Module):
         # Find the resulting derivatives and the actual derivatives
         
         results, targets=self.derivatives(T, X, Y, XYini, self.f_t, self.df_x, self.df_y, optimizer)
-        print("restults", results)
+        print("results", results)
         print("targets", targets)
+        
         # Calculate the accuracy of our results
         acc=self.accuracy(results,targets)
-        
+
         # Back propagate the error
-#        obj_val= loss(results, targets)
+        obj_val= loss(results, targets)
+
+#        obj_val=torch.autograd.Variable(loss(results, targets),requires_grad=True)
         optimizer.zero_grad()
-        obj_val=torch.autograd.Variable(loss(results, targets),requires_grad=True)
         obj_val.backward()         # Update the values 
         optimizer.step()
 
@@ -73,7 +76,7 @@ class Net(nn.Module):
     # Calculates the porcentage of values that were correctly labeled by our NN    
     def accuracy(self, results, targets):
 
-        accuracy=torch.mean(torch.add(results,targets, alpha=-1))
+        accuracy=torch.mean(torch.add(results, targets, alpha=-1))
 
         return accuracy
 
@@ -82,8 +85,8 @@ class Net(nn.Module):
 
         t=np.arange(0,1, time_step)
 
-        x=np.arange(-1,1,0.01)
-        y=np.arange(-1,1,0.01)        
+        x=np.arange(-1,1,0.1)
+        y=np.arange(-1,1,0.1)        
         x,y=np.meshgrid(y,x)
         xy=np.column_stack((y.ravel(),x.ravel()))
 
@@ -108,12 +111,14 @@ class Net(nn.Module):
         Yini=np.full((X.shape),yi)
         XYini=np.concatenate((Xini,Yini), axis=1)
 
-        XYini=torch.tensor(XYini).float()
-        X=torch.tensor(X).float()
-        Y=torch.tensor(Y).float()
-        T=torch.tensor(T).float()
-  
-
+        XYini=torch.tensor(XYini,requires_grad=True).float()
+        X=torch.tensor(X, requires_grad=True).float()
+        Y=torch.tensor(Y, requires_grad=True).float()
+        T=torch.tensor(T, requires_grad=True).float()
+        print(XYini,"XYini")
+        print(X,"X")
+        print(Y,"Y")
+        print(T,"T")
         return X, Y, T, XYini
 
     
@@ -123,18 +128,18 @@ class Net(nn.Module):
         dy=df_y(x,y)
         return torch.cat((dx,dy), axis=1)
 
-    def derivatives(self, T, X, Y, XYini, f_t, df_x, df_y, optimizer):
-        T.requires_grad=True         
+    def derivatives(self, T, X, Y, XYini, f_t, df_x, df_y, optimizer):       
         outputs=f_t(T,X,Y, XYini)
         out_x=torch.reshape(outputs[:,0].detach(),X.shape)
         out_y=torch.reshape(outputs[:,1].detach(),Y.shape)
-    
-        outputs.backward(gradient=torch.ones(outputs.size()))
-
+#        outputs.backward(gradient=torch.ones(outputs.size()))
+#        df_nn=T.grad
+        print("outputs",outputs)
+        df_nn=torch.autograd.grad(outputs, T, grad_outputs=torch.ones(outputs.size()), create_graph=True)
+        print("df_nn",df_nn)
         df_exp=self.df(out_x,out_y, df_x, df_y)
-        df_nn=T.grad
         optimizer.zero_grad()
-        return  df_nn, df_exp
+        return  df_nn[0], df_exp
         
 
 

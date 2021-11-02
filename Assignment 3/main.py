@@ -9,63 +9,13 @@ import torch.optim as optim
 
 import matplotlib.pyplot as plt
 
+
 sys.path.append('src')
-from Neural_Network import Net
 
-def run_demo(lr,epochs, model, xi,yi, time_step):
-    for param in model.parameters():
-        param.requires_grad = True
-    # Divide data into inputs and lables, but also into a 3000 test 
-    X, Y, T,  XYini = model.getdata(xi,yi, time_step) 
+#from Neural_Network import Net
 
-    # Define an optimizer and the loss function
-    
-#    optimizer = optim.SGD(model.parameters(), lr)  # We use gradient descent 
+from NN import Net, train, evaluate
 
-    # If you want you could try Adam
-    optimizer = optim.SGD(model.parameters(), lr, momentum=0.99)
-
-    # The loss function is the cross entropy.
-    loss= torch.nn.MSELoss(reduction= 'mean')     
-
-    #Lists that will contain the information for each epoch
-    loss_train= []
-    acc_train=[]
-#    loss_test= []
-#    acc_test=[]
-    num_epochs= int(epochs)
-
-    # Training loop
-    for epoch in range(1, num_epochs + 1):
-  
-        train_val, accuracy= model.backprop(X, Y , T , XYini, loss, epoch, optimizer)
-        loss_train.append(train_val)
-        acc_train.append(accuracy)        
-            
-#        test_val, test_acc= model.test(test_inputs, test_targets, loss, epoch)       
-#        loss_test.append(test_val)
-#        acc_test.append(test_acc)
-
-        if (epoch+1) % 2 == 0:
-            print('Epoch [{}/{}]'.format(epoch+1, num_epochs)+\
-                      '\tTraining Loss: {:.4f}'.format(train_val)+\
-                      '\tTraining Accuracy: {:.4f}'.format(accuracy))
-
-    print('Final training loss: {:.4f}'.format(loss_train[-1]))
-    print('Final training accuracy: {:.4f}'.format(acc_train[-1]))
-
-    return  loss_train, acc_train
-
-#def plot_results(training, test, type_of_graph):
-#    assert len(training)==len(test), 'Length mismatch between the curves'
-#    num_epochs= len(training)
-
-    # Plot saved in results folder
-#    plt.plot(range(num_epochs), training, label= "Training "+type_of_graph, color="blue")
-#    plt.plot(range(num_epochs), test, label= "Test "+type_of_graph, color= "green")
-#    plt.legend()
-#    plt.savefig(args.output + '/fig'+type_of_graph+'.pdf')
-#    plt.close()
 
 
 if __name__ == '__main__':
@@ -86,8 +36,9 @@ if __name__ == '__main__':
     #Load data
     lb=float(args.lb)
     up=float(args.ub)
+    ntests=int(args.ntests)
     dx=args.xfield
-    dy=args.xfield
+    dy=args.yfield
 
     f=open(args.json)
     json_file=json.load(f)
@@ -95,12 +46,14 @@ if __name__ == '__main__':
     lr=json_file['learning rate']   
     epochs=json_file['Epochs']    
     n_hidden=json_file['n_hidden']  #number of hidden
-    time_step=json_file['time step']
+    t=json_file['final time']
+    division=json_file['time division']
 
     #Initial conditions
-    xi=np.random.uniform(lb,up)
-    yi=np.random.uniform(lb,up)
-
+    Xi=np.random.uniform(lb,up,size=(ntests))
+    
+    Yi=np.random.uniform(lb,up,size=(ntests))
+    
     # Define global functions
     u="u"
     v="v"
@@ -112,12 +65,29 @@ if __name__ == '__main__':
 
     #Creat an instance of the model
 
-    model=Net(n_hidden,time_step, xi, yi, df_x, df_y)
-    
-    #  Run the model 
-    loss_train, acc_train=run_demo(lr,epochs, model, xi,yi, time_step)
-    model.reset()
 
-    #Plot and save
-#    plot_results(loss_train, loss_test, "loss")
-#    plot_results(acc_train, acc_test, "accuracy")
+    model=Net(n_hidden,df_x, df_y)
+    optimizer = optim.Adam(model.parameters(), lr)
+    train(epochs, 100, model, optimizer)
+
+    
+    def plot(k,xi,yi,u,v, model,t,division):
+        output=evaluate(xi,yi, model, t, division)
+        output=torch.reshape(output, (output.shape[0],output.shape[2]))
+        x,y=np.meshgrid(np.linspace(-1,1,10),np.linspace(-1,1,10))
+        dx=u(x,y)
+        dy=v(x,y)
+        if k==0:
+            plt.quiver(x,y,dx,dy)
+        plt.plot(xi,yi, 'ro')
+        plt.plot(output[:,0],output[:,1])
+
+    k=0
+    for t in range(ntests):
+        xi=Xi[k]
+        yi=Yi[k]
+        plot(k,xi,yi,u,v,model,t,division)
+        k+=1
+    plt.savefig(args.results+'/fig1.pdf')
+    plt.show()
+

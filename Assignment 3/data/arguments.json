@@ -1,6 +1,7 @@
 {
-	"learning rate": 0.1,
-	"time step": 1,
+	"learning rate": 0.01,
+	"final time": 7,
+	"time division": 1000,
 	"Epochs": 100,
 	"n_hidden": 1000
 }
