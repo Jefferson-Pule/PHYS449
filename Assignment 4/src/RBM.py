@@ -7,8 +7,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torch.autograd import Variable 
-import matplotlib.pyplot as plt
-import os 
+
 
 # Fully Visible RBM Structure 
 class RBM(nn.Module):
@@ -20,22 +19,17 @@ class RBM(nn.Module):
         self.J = torch.rand(n_vis)      # Initial guess for the 
         self.k = k
         
-        self.buildlattice()    
+        self.buildlattice()  
         
+    # Gets the visible samples, and the Metropolis samples
     def forward(self,v):
 
         vn=self.Metropolis_Hastings(v)
         
         return 2*v-1, vn
     
-    def gradient(self,v,vn):
-        
-        positive_phase=self.get_pairs(v)
-        negative_phase=self.get_pairs(vn)
-        
-        return positive_phase-negative_phase
-    
     def train(self, epochs, data, learning_rate, verbosity):
+
         data=torch.tensor(data, dtype=torch.float32)
         lr=learning_rate
         for epoch in range(epochs):
@@ -43,7 +37,7 @@ class RBM(nn.Module):
 
             grad=self.gradient(v,vn)
             
-            self.J+=lr*grad
+            self.J+=lr*grad     #Update the value of J based on the gradient 
 
             if (epoch+1) % verbosity == 0:
                 print('Epoch [{}/{}]'.format(epoch+1, epochs)+\
@@ -51,9 +45,17 @@ class RBM(nn.Module):
 
         print('Final training loss: {:.4f}'.format(torch.mean(grad)))
         return self.J, grad
+
+    def gradient(self,v,vn):
+        
+        positive_phase=self.get_pairs(v)
+        negative_phase=self.get_pairs(vn)
+        
+        return positive_phase-negative_phase
     
+    # Gets the pair wise convination xiyi and saves it in an array
     def get_pairs(self,v):
-        XY=[]
+        XY=[]      
         
         for n in range(len(self.nearest_neighbor)):
             xnyn=v[:,self.nearest_neighbor[n][0]]*v[:,self.nearest_neighbor[n][1]]
@@ -61,10 +63,6 @@ class RBM(nn.Module):
             
         return torch.tensor(XY, dtype=torch.float32)
 
-    def buildlattice(self):
-        self.nearest_neighbor=[]
-        for spin in range(self.N):
-            self.nearest_neighbor.append([spin, (spin+1)%self.N])
 
     def energy(self,v):
         
@@ -77,26 +75,31 @@ class RBM(nn.Module):
     
     def sample_from_p(self,prob,vn, vholder):
         
-        accept_change=torch.reshape(torch.bernoulli(prob), shape=[vn.shape[0],1])
-        mean_accept_change=torch.mean(accept_change)
-        accept_change=accept_change*torch.ones(size=vn.shape)
-        new_sample=torch.where(accept_change==1, vholder, vn)
+        accept_change=torch.reshape(torch.bernoulli(prob), shape=[vn.shape[0],1]) # return 1 if change is accepted or 0 if not based on probabilities
+        accept_change=accept_change*torch.ones(size=vn.shape)          # Generates a tensor of the size of vn that will update based on previous step
+        new_sample=torch.where(accept_change==1, vholder, vn)          # Choose from vholder if change is accepted or from vn if change is not accepted
 
         return new_sample
 
     def Metropolis_Hastings(self, v):
-        vn=torch.add(torch.mul(v,2),-1)
+        vn=torch.add(torch.mul(v,2),-1)     #vn vissible layer
         
         for n in range(self.k):
 
-            change=2*torch.randint(0,2, size=v.shape, dtype=torch.float32)-1
-            vholder=change*vn
-            neg_energy_diff=-(self.energy(vn)-self.energy(vholder))
-            prob=torch.exp(-F.relu(neg_energy_diff))
-            vn= self.sample_from_p(prob,vn,vholder)
+            change=2*torch.randint(0,2, size=v.shape, dtype=torch.float32)-1     #Random change
+            vholder=change*vn                                                    #Possible change
+            neg_energy_diff=-(self.energy(vn)-self.energy(vholder))              #Calculate energy difference
+            prob=torch.exp(-F.relu(neg_energy_diff))                             #Calculate Prob
+            vn= self.sample_from_p(prob,vn,vholder)                              #Sample from vn or vholder based on probability 
             
         return vn
 
+    # Builds an array that contains the nearest neighbors index
+   
+    def buildlattice(self):
+        self.nearest_neighbor=[]
+        for spin in range(self.N):
+            self.nearest_neighbor.append([spin, (spin+1)%self.N])
 
 
 
