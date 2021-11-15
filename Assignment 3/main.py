@@ -66,7 +66,7 @@ if __name__ == '__main__':
     #Creat an instance of the model
 
 
-    model=Net(n_hidden,df_x, df_y)
+    model=Net(n_hidden,df_x, df_y, t, division)
     optimizer = optim.Adam(model.parameters(), lr)
     train(epochs, 100, model, optimizer)
 

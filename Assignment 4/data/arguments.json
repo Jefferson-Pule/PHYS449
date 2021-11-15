@@ -1,0 +1,5 @@
+{
+	"learning rate": 0.1,
+	"Epochs": 600,
+	"iterations_for_MH": 100
+}

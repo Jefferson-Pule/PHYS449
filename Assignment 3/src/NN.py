@@ -8,26 +8,26 @@ class Net(nn.Module):
         Two fully-connected layers fc1 and fc2.
         Two nonlinear activation functions sigmoid and softmax.
     '''
-    def __init__(self, n_hidden ,df_x, df_y):
+    def __init__(self, n_hidden ,df_x, df_y, final_time, division):
         super(Net, self).__init__()
 
-        self.fc1= nn.Linear(1, n_hidden)
+        self.fc1= nn.Linear(3, n_hidden)
         self.fc2= nn.Linear(n_hidden, n_hidden)
         self.fc3= nn.Linear(n_hidden, 2)
         self.df_x= df_x
         self.df_y= df_y
 
     # Feedforward function
-    def forward(self,xiyi, t):
-        h = torch.sigmoid(self.fc1(t))
+    def forward(self,xy, t, xiyi):
+        h = torch.sigmoid(self.fc1(t,xy))
         p = torch.tanh(self.fc2(h))
         r = self.fc3(p)
 
         return xiyi+t*r
       
-    def loss(self, xiyi, t):
+    def loss(self,xy,t , xiyi):
       t.requires_grad = True
-      outputs = self.forward(xiyi,t)
+      outputs = self.forward(xy,t, xiyi)
       #Calculate the gradient of x in function of t
       grads_x = torch.autograd.grad(outputs[:,0], t, grad_outputs=torch.ones_like(outputs[:,0]),
                           create_graph=True, retain_graph=True)[0]
@@ -38,14 +38,14 @@ class Net(nn.Module):
       
       #The loss is the sum of the mean squares and the expected gradient.
 
-      diff_x = (grads_x - torch.tensor(self.df_x(xiyi[:,0],xiyi[:,1]))) ** 2
-      diff_y = (grads_y - torch.tensor(self.df_y(xiyi[:,0],xiyi[:,1]))) ** 2
+      diff_x = (grads_x - torch.tensor(self.df_x(xy[:,0],xy[:,1]))) ** 2
+      diff_y = (grads_y - torch.tensor(self.df_y(xy[:,0],xy[:,1]))) ** 2
       loss = (diff_x.sum() + diff_y.sum()) / diff_x.shape[0]
       return  loss
   
 
 
-def train(num_epochs, num_iters, model, optimizer):
+def train(num_epochs, num_iters, model, optimizer, xiyi):
     loss_train= []
     acc_train=[]
     
@@ -59,7 +59,7 @@ def train(num_epochs, num_iters, model, optimizer):
             optimizer.zero_grad()
 
             # forward + backward + optimize
-            loss = model.loss(inputs,t) 
+            loss = model.loss(inputs,t, xiyi) 
             loss.backward()
             optimizer.step() 
 
@@ -77,9 +77,12 @@ def evaluate(xi,yi,model, t, division):
     #points to evaluate
     
     point=[]
-    for t in np.linspace(0,3,num=100):
+    xy=xiyi
+
+    for t in np.linspace(0,final_time,num=division):
         t=torch.tensor([t]).float()
-        xtyt=model.forward(xiyi,t)
+        xtyt=model.forward(xy,t,xiyi)
+        xy=xtyt
         point.append(xtyt.data)
     return torch.stack(point)
 
