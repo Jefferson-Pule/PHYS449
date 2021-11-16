@@ -37,14 +37,16 @@ class RBM(nn.Module):
 
             grad=self.gradient(v,vn)
             
-            self.J+=lr*grad     #Update the value of J based on the gradient 
+            self.J+=lr*grad     #Update the value of J based on the gradient
+            
+            loss=self.KL_divergence(v)[0]
 
             if (epoch+1) % verbosity == 0:
                 print('Epoch [{}/{}]'.format(epoch+1, epochs)+\
-                          '\tTraining Loss: {:.4f}'.format(torch.mean(grad)))
+                          '\tTraining Loss: {:.4f}'.format(loss))
 
-        print('Final training loss: {:.4f}'.format(torch.mean(grad)))
-        return self.J, grad
+        print('Final training loss: {:.4f}'.format(loss))
+        return self.J, loss
 
     def gradient(self,v,vn):
         
@@ -101,5 +103,24 @@ class RBM(nn.Module):
         for spin in range(self.N):
             self.nearest_neighbor.append([spin, (spin+1)%self.N])
 
+    def KL_divergence(self,p):
+        #Calculate the unique samples and their frequencies 
 
+        unique_p, counts_p= torch.unique(p, dim=0, return_counts=True)
+        prob_p=1/(torch.sum(counts_p))*counts_p                    #Probability of each unique sample
+
+        logp=torch.log(prob_p)
+        neg_entropy=0                      #Negative Entropy
+        pxenergy=0                         #First term of the cross entropy
+        partition=0                        #Partition function 
+        
+        for x in range(len(unique_p)):
+            neg_entropy+=(prob_p[x]*logp[x]).numpy()
+            eloc=self.energy(torch.reshape(unique_p[x], shape=(1,unique_p.shape[1])))
+            pxenergy+=prob_p[x].numpy()*eloc.numpy()
+            partition+=np.exp(-eloc.numpy())
+            
+        KL=neg_entropy+pxenergy+np.log(partition) #KL divergence
+
+        return KL
 
