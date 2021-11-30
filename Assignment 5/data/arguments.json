@@ -1,0 +1,5 @@
+{
+	"learning rate": 0.01,
+	"Epochs": 100,
+	"Lattent_dims": 50
+}
