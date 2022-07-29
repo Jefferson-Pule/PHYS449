@@ -1,0 +1,7 @@
+{
+	"learning rate": 0.01,
+	"final time": 2,
+	"time division": 100,
+	"Epochs": 15,
+	"n_hidden": 1000
+}
